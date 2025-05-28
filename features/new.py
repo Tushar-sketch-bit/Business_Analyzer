@@ -10,7 +10,8 @@ import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from scripts.constants import adjust_engagement,DATA_THESHOLD,read_data,DATA_FOLDER,IMPORTANT_COLUMNS,spearman_correlation,pearson_correlation
+from scripts.constants import adjust_engagement,DATA_THESHOLD,read_data,DATA_FOLDER,IMPORTANT_COLUMNS,spearman_correlation,pearson_correlation,column_categories,plot_bar,plot_line
+
 
 data_name='sales_data_sample.csv'
 
@@ -19,31 +20,11 @@ dataframe=read_data(data_name)
 
 #column_names=dataframe.columns
 
-def column_categories(dataframe):
-    column_names=dataframe.columns
-    OBJECT_COLUMNS=[]
-    NUMERIC_COLUMNS=[]
-    for column in column_names:
-        if dataframe[column].dtype=='object':
-            OBJECT_COLUMNS.append(column)
-        continue
-    else:
-        pass
-
-#Numeric columns are those which have int or float datatype.
-
-    for column in column_names:
-      if dataframe[column].dtype!='object':
-        NUMERIC_COLUMNS.append(column)
-        continue
-    else:
-        pass
-        return OBJECT_COLUMNS,NUMERIC_COLUMNS
 
 objects_columns,numerics_columns=column_categories(dataframe)
 
-#print(objects_columns)
-
+print(objects_columns)
+print(numerics_columns)
 
 numeric_df=dataframe.select_dtypes(include=['int64','float64'])
 
@@ -53,3 +34,8 @@ sns.heatmap(correlation_matrix,annot=True,cmap='coolwarm',linewidths=0.5)
 plt.title('Correlation Matrix')
 plt.tight_layout()
 plt.show()
+
+
+#plot_line(dataframe, 'QUANTITYORDERED', 'SALES')
+#plot_line(dataframe, 'Discount', 'Profit')
+plot_bar(dataframe,'PRODUCTCODE','SALES')
