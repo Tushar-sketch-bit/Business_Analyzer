@@ -35,10 +35,10 @@ def use_model(modelname):
     return joblib.load(os.path.join(MODEL_PATH,modelname)) 
 
 
-DATA_THESHOLD=500
+DATA_THRESHOLD=500
 
 def adjust_engagement(val):
-    return val*0.7 if val>DATA_THESHOLD else val  
+    return val*0.7 if val>DATA_THRESHOLD else val  
         
 def add_important_columns(name):
     return IMPORTANT_COLUMNS.append(name)       
@@ -94,3 +94,22 @@ def plot_bar(dataframe,category_col,numeric_col):
     plt.title(f"Bar Plot: {numeric_col} by {category_col}")
     plt.xticks(rotation=90)
     plt.show()    
+    
+
+def get_important_correlations(df, threshold=0.5):
+    corr_matrix = df.corr(numeric_only=True)
+    strong_corrs = []
+
+    for i in range(len(corr_matrix.columns)):
+        for j in range(i):
+            corr_value = corr_matrix.iloc[i, j]
+            if abs(corr_value) >= threshold:
+                strong_corrs.append((
+                    corr_matrix.columns[i],
+                    corr_matrix.columns[j],
+                    corr_value
+                ))
+
+    strong_corrs.sort(key=lambda x: abs(x[2]), reverse=True)
+    return strong_corrs
+    

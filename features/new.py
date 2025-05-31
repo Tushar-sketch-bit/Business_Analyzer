@@ -10,7 +10,7 @@ import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from scripts.constants import adjust_engagement,DATA_THESHOLD,read_data,DATA_FOLDER,IMPORTANT_COLUMNS,spearman_correlation,pearson_correlation,column_categories,plot_bar,plot_line
+from scripts.constants import adjust_engagement,DATA_THRESHOLD,read_data,DATA_FOLDER,IMPORTANT_COLUMNS,spearman_correlation,pearson_correlation,column_categories,plot_bar,plot_line,get_important_correlations
 
 
 data_name='sales_data_sample.csv'
@@ -29,13 +29,23 @@ print(numerics_columns)
 numeric_df=dataframe.select_dtypes(include=['int64','float64'])
 
 correlation_matrix=numeric_df.corr()
+print(correlation_matrix)
 plt.figure(figsize=(10,8))
 sns.heatmap(correlation_matrix,annot=True,cmap='coolwarm',linewidths=0.5)
 plt.title('Correlation Matrix')
 plt.tight_layout()
-plt.show()
+#plt.show()
 
 
 #plot_line(dataframe, 'QUANTITYORDERED', 'SALES')
 #plot_line(dataframe, 'Discount', 'Profit')
-plot_bar(dataframe,'PRODUCTCODE','SALES')
+#plot_bar(dataframe,'PRODUCTCODE','SALES')
+#spearman_correlation(data_name)
+#pearson_correlation(data_name)
+important_correlations=get_important_correlations(dataframe,threshold=0.6)
+for col1,col2, corr in important_correlations:
+    print(f'{col1} and {col2}: Correlation: {corr}')
+
+product_sales=dataframe.groupby('PRODUCTLINE')['SALES'].sum().reset_index()
+
+
