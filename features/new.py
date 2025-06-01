@@ -10,42 +10,37 @@ import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from scripts.constants import adjust_engagement,DATA_THRESHOLD,read_data,DATA_FOLDER,IMPORTANT_COLUMNS,spearman_correlation,pearson_correlation,column_categories,plot_bar,plot_line,get_important_correlations
+from scripts.constants import adjust_engagement,read_data,DATA_FOLDER,IMPORTANT_COLUMNS,spearman_correlation,pearson_correlation,column_categories,plot_bar,plot_line,get_important_correlations,correlation_graph_plot,save_graph,pivot_products,plot_pivot_products
 
 
 data_name='sales_data_sample.csv'
-
 dataframe=read_data(data_name)
-#print(dataframe.describe())
 
-#column_names=dataframe.columns
+object_cols,numeric_cols=column_categories(dataframe)
 
 
-objects_columns,numerics_columns=column_categories(dataframe)
-
-print(objects_columns)
-print(numerics_columns)
 
 numeric_df=dataframe.select_dtypes(include=['int64','float64'])
-
-correlation_matrix=numeric_df.corr()
-print(correlation_matrix)
-plt.figure(figsize=(10,8))
-sns.heatmap(correlation_matrix,annot=True,cmap='coolwarm',linewidths=0.5)
-plt.title('Correlation Matrix')
-plt.tight_layout()
-#plt.show()
+correlation_graph_plot(numeric_df)
 
 
-#plot_line(dataframe, 'QUANTITYORDERED', 'SALES')
-#plot_line(dataframe, 'Discount', 'Profit')
-#plot_bar(dataframe,'PRODUCTCODE','SALES')
-#spearman_correlation(data_name)
-#pearson_correlation(data_name)
 important_correlations=get_important_correlations(dataframe,threshold=0.6)
 for col1,col2, corr in important_correlations:
     print(f'{col1} and {col2}: Correlation: {corr}')
 
-product_sales=dataframe.groupby('PRODUCTLINE')['SALES'].sum().reset_index()
+product_sales=dataframe.groupby('PRODUCTCODE')['SALES'].sum().reset_index()
+
+filtered_product_sales=product_sales[product_sales['SALES']>8000]
+print(filtered_product_sales.head(5))
+filtered_product_sales.plot(kind='bar',x='PRODUCTCODE',y='SALES')
+plt.xlabel('Product Line')
+plt.ylabel('Total Sales')
+plt.title('Top 3 Product Lines by Total Sales')
+plt.xticks(rotation=90)
+plt.tight_layout()
+plt.show()
 
 
+
+product_matrix=pivot_products(dataframe,index='ORDERNUMBER',column='PRODUCTCODE',value='SALES')
+print(product_matrix)

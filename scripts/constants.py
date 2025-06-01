@@ -35,9 +35,7 @@ def use_model(modelname):
     return joblib.load(os.path.join(MODEL_PATH,modelname)) 
 
 
-DATA_THRESHOLD=500
-
-def adjust_engagement(val):
+def adjust_engagement(val,DATA_THRESHOLD):
     return val*0.7 if val>DATA_THRESHOLD else val  
         
 def add_important_columns(name):
@@ -73,7 +71,7 @@ def column_categories(dataframe):
         #print(f"{column} is Categorical")
         pass
         return OBJECT_COLUMNS,NUMERIC_COLUMNS
-
+        
 
 def plot_line(dataframe,x_col,y_col):
     plt.figure(figsize=(10,5))
@@ -96,7 +94,7 @@ def plot_bar(dataframe,category_col,numeric_col):
     plt.show()    
     
 
-def get_important_correlations(df, threshold=0.5):
+def get_important_correlations(df, threshold):
     corr_matrix = df.corr(numeric_only=True)
     strong_corrs = []
 
@@ -112,4 +110,27 @@ def get_important_correlations(df, threshold=0.5):
 
     strong_corrs.sort(key=lambda x: abs(x[2]), reverse=True)
     return strong_corrs
+
+
+def correlation_graph_plot(numeric_df):
+    
+    correlation_matrix=numeric_df.corr()
+    print(correlation_matrix)
+    plt.figure(figsize=(10,8))
+    sns.heatmap(correlation_matrix,annot=True,cmap='coolwarm',linewidths=0.5)
+    plt.title('Correlation Matrix')
+    plt.tight_layout()
+    plt.show()
+
+
+def pivot_products(dataframe,index,column,value):
+    product_matrix=dataframe.pivot_table(index=index,columns=column,values=value).fillna(0)
+    return product_matrix
+def plot_pivot_products(products_df,title):
+    product_corr=products_df.corr()
+    plt.figure(figsize=(10,8))
+    sns.heatmap(product_corr,cmap='coolwarm',annot=True,linewidths=0.5)
+    plt.title(f"{title}")
+    plt.tight_layout()
+    plt.show()
     
