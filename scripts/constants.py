@@ -7,10 +7,11 @@ import joblib
 
 BASE_DIR=os.path.dirname(os.path.dirname(__file__))
 DATA_FOLDER=os.path.join(BASE_DIR,'data')
-
 MODEL_PATH=os.path.join(BASE_DIR,'models')
 GRAPHS_SAVED_PATH=os.path.join(BASE_DIR,'outputs')
 
+
+#Data utils
 IMPORTANT_COLUMNS=[]
 def read_data(filename):
     return pd.read_csv(os.path.join(DATA_FOLDER,filename),encoding='latin-1')
@@ -31,13 +32,16 @@ def show_saved_graphs(output_folder):
             plt.imshow(img)
             plt.axis('off')
             plt.show()
+  
+#Model utils           
 def use_model(modelname):
     return joblib.load(os.path.join(MODEL_PATH,modelname)) 
 
-
 def adjust_engagement(val,DATA_THRESHOLD):
     return val*0.7 if val>DATA_THRESHOLD else val  
-        
+
+
+#Data Analysis utils
 def add_important_columns(name):
     return IMPORTANT_COLUMNS.append(name)       
 def pearson_correlation(filename):
@@ -61,7 +65,7 @@ def column_categories(dataframe):
         #print(f"{column} is Numeric")
         pass
 
-#Numeric columns are those which have int or float datatype.
+ #Numeric columns are those which have int or float datatype.
 
     for column in column_names:
       if dataframe[column].dtype!='object':
@@ -71,29 +75,7 @@ def column_categories(dataframe):
         #print(f"{column} is Categorical")
         pass
         return OBJECT_COLUMNS,NUMERIC_COLUMNS
-        
-
-def plot_line(dataframe,x_col,y_col):
-    plt.figure(figsize=(10,5))
-    plt.plot(dataframe[x_col],dataframe[y_col],marker='o',linestyle='-')
-    plt.xlabel(x_col)
-    plt.ylabel(y_col)
-    plt.title(f"{y_col} vs {x_col}")
-    plt.grid(True)
-    plt.tight_layout()
-    plt.show()
-
-
-def plot_bar(dataframe,category_col,numeric_col):
-    plt.figure(figsize=(15, 6))
-    sns.barplot(x=category_col, y=numeric_col, data=dataframe)
-    plt.xlabel(category_col)
-    plt.ylabel(numeric_col)
-    plt.title(f"Bar Plot: {numeric_col} by {category_col}")
-    plt.xticks(rotation=90)
-    plt.show()    
     
-
 def get_important_correlations(df, threshold):
     corr_matrix = df.corr(numeric_only=True)
     strong_corrs = []
@@ -111,9 +93,31 @@ def get_important_correlations(df, threshold):
     strong_corrs.sort(key=lambda x: abs(x[2]), reverse=True)
     return strong_corrs
 
+def pivot_products(dataframe,index,column,value):
+    product_matrix=dataframe.pivot_table(index=index,columns=column,values=value).fillna(0)
+    return product_matrix 
+        
+#Graph utils
+def plot_line(dataframe,x_col,y_col):
+    plt.figure(figsize=(10,5))
+    plt.plot(dataframe[x_col],dataframe[y_col],marker='o',linestyle='-')
+    plt.xlabel(x_col)
+    plt.ylabel(y_col)
+    plt.title(f"{y_col} vs {x_col}")
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
 
-def correlation_graph_plot(numeric_df):
+def plot_bar(dataframe,category_col,numeric_col):
+    plt.figure(figsize=(15, 6))
+    sns.barplot(x=category_col, y=numeric_col, data=dataframe)
+    plt.xlabel(category_col)
+    plt.ylabel(numeric_col)
+    plt.title(f"Bar Plot: {numeric_col} by {category_col}")
+    plt.xticks(rotation=90)
+    plt.show()    
     
+def correlation_graph_plot(numeric_df):
     correlation_matrix=numeric_df.corr()
     print(correlation_matrix)
     plt.figure(figsize=(10,8))
@@ -122,15 +126,45 @@ def correlation_graph_plot(numeric_df):
     plt.tight_layout()
     plt.show()
 
-
-def pivot_products(dataframe,index,column,value):
-    product_matrix=dataframe.pivot_table(index=index,columns=column,values=value).fillna(0)
-    return product_matrix
 def plot_pivot_products(products_df,title):
     product_corr=products_df.corr()
     plt.figure(figsize=(10,8))
     sns.heatmap(product_corr,cmap='coolwarm',annot=True,linewidths=0.5)
     plt.title(f"{title}")
+    plt.tight_layout()
+    plt.show()
+
+def product_product_corr_heatmap(df):
+    matrix=df.pivot_table(index='ORDERNUMBER',columns='PRODUCTCODE',values='SALES').fillna(0)
+    corr=matrix.corr()
+    plt.figure(figsize=(12,10))
+    sns.heatmap(corr,cmap='coolwarm',annot=True,linewidths=0.5,center=0)
+    plt.title('Product-Product Correlation Heatmap (sales)')
+    plt.tight_layout()
+    plt.show()
+
+def numeric_target_corr_bar(df,target='SALES'):
+    numeric_df=df.select_dtypes(include=['int64','float64'])
+    corr=numeric_df.corr()[target].sort_values(ascending=False)
+    corr.drop(target,inplace=True)
+    corr.plot(kind='barh',figsize=(10,6),color='green')
+    plt.title(f'Correlation with {target}')
+    plt.xlabel('Correlation Coefficients')
+    plt.ylabel('Features')
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+
+
+def numeric_target_corr_bar(df,target): 
+    numeric_df=df.select_dtypes(include=['int64','float64'])
+    corr=numeric_df.corr()[target].sort_values(ascending=False)
+    corr.drop(target,inplace=True)
+    corr.plot(kind='barh',figsize=(10,6),color='green')
+    plt.title(f'Correlation with {target}')
+    plt.xlabel('Correlation Coefficients')
+    plt.ylabel('Features')
+    plt.grid(True)
     plt.tight_layout()
     plt.show()
     
