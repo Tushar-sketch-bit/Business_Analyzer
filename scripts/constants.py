@@ -136,7 +136,49 @@ class CorrelationFeatures:
     def pivot_products(dataframe, index, column, value):
         product_matrix = dataframe.pivot_table(index=index, columns=column, values=value).fillna(0)
         return product_matrix
-
+    
+    
+class Eda:
+    @staticmethod
+    def combine_two_features_multiply(dataframe,feature1,feature2,new_feature):
+        """Multiply two features together to create a new feature"""
+        """args: (dataframe,existing_feature1,existing_feature2,new_feature)"""
+        feature1=str(feature1).upper()
+        feature2=str(feature2).upper()
+        new_feature=str(new_feature).upper()
+        dataframe[new_feature]=dataframe[feature1]*dataframe[feature2]
+        return dataframe
+    
+    @staticmethod
+    def combine_two_Features_add(dataframe,feature1,feature2,new_feature):
+        """add Two features together to create new feature"""
+        """args: (dataframe,existing_feature1,existing_feature2,new_feature)"""
+        feature1=str(feature1).upper()
+        feature2=str(feature2).upper()
+        new_feature=str(new_feature).upper()
+        dataframe[new_feature] = dataframe[feature1] + dataframe[feature2]
+        return dataframe
+    @staticmethod
+    def combine_two_Features_minus(dataframe,feature1,feature2,new_feature):
+        """Sbtract to create new feature from existing Two features"""
+        """args: (dataframe,existing_feature1,existing_feature2,new_feature)"""
+        feature1=str(feature1).upper()
+        feature2=str(feature2).upper()
+        new_feature=str(new_feature).upper()
+        dataframe[new_feature] = dataframe[feature1] - dataframe[feature2]
+        return dataframe
+    
+    @staticmethod
+    def combine_two_Features_div(dataframe,feature1,feature2,new_feature):
+        """Divide and create new feature from Two existing Features"""
+        """args: (dataframe,existing_feature1,existing_feature2,new_feature)"""
+        feature1=str(feature1).upper()
+        feature2=str(feature2).upper()
+        new_feature=str(new_feature).upper()
+        dataframe[new_feature] = dataframe[feature1] / dataframe[feature2]
+        return dataframe
+    
+    
 class Visualization:
     @staticmethod
     def plot_line(dataframe, x_col, y_col):
