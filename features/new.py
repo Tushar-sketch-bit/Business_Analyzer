@@ -3,10 +3,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import scipy.stats as stats
-from scipy.stats import stats
+from scipy.stats import stats,trim_mean
 import pandas as pd
 import os
 import sys
+import wquantiles
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from scripts.constants import FileHandler, CorrelationFeatures, Visualization,Eda
@@ -64,5 +65,10 @@ dataframe=Eda.combine_two_Features_minus(dataframe,'msrp','priceeach','discount'
 dataframe=Eda.combine_two_Features_div(dataframe,'discount','msrp','discount_percentage')
 dataframe=Eda.combine_two_features_multiply(dataframe,'msrp','quantityordered','totalrevenue')
 dataframe['DISCOUNT_PERCENTAGE'] = dataframe['DISCOUNT_PERCENTAGE'].clip(lower=0)
-
+dataframe['DISCOUNT_PERCENTAGE'] = dataframe['DISCOUNT_PERCENTAGE']*100
 print(dataframe[['DISCOUNT', 'DISCOUNT_PERCENTAGE', 'TOTALREVENUE']].head())
+trimmed_mean=trim_mean(dataframe['DISCOUNT'],proportiontocut=0.1,axis=0)
+mean=np.mean(dataframe['DISCOUNT'])
+median=np.median(dataframe['DISCOUNT'])
+weighted_median=wquantiles.median(dataframe['DISCOUNT'],weights=dataframe['TOTALREVENUE'])
+print(f"normal mean of discount{mean} \n trimmed mean(0.1) on discount{trimmed_mean}) \n median({median}) \n weighted median ({weighted_median})")

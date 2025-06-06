@@ -1,9 +1,10 @@
 import os
 from scripts.constants import agent_step1_load_data
-
+import pandas as pd
+import pdfplumber
 class DataLoadAgent:
     """Agent for step 1: loading CSV or PDF files with error handling."""
-    def __init__(self, file_path):
+    def __init__(self, file_path:pd.DataFrame| pdfplumber.pdf.PDF):
         self.file_path = file_path
         self.dataframe = None
         self.status = None

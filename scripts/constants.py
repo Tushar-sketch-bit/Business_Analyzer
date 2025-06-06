@@ -11,20 +11,27 @@ DATA_FOLDER = os.path.join(BASE_DIR, 'data')
 MODEL_PATH = os.path.join(BASE_DIR, 'models')
 GRAPHS_SAVED_PATH = os.path.join(BASE_DIR, 'outputs')
 
-IMPORTANT_COLUMNS = []
 
+    
 class FileHandler:
+    """Loads a CSV file from the specified directory and returns it as a Pandas DataFrame.
+    Raises:
+        ValueError: failed to load file
+    Returns:
+        _type_: Pandas DataFrame
+    """
     @staticmethod
-    def read_data(filename):
+    def read_data(filename:str)-> pd.DataFrame:
         return pd.read_csv(os.path.join(DATA_FOLDER, filename), encoding='latin-1')
 
     @staticmethod
-    def write_data(df, filename):
+    def write_data(df:pd.DataFrame, filename:str):
         df.to_csv(os.path.join(DATA_FOLDER, filename), index=False, sep='\t')
 
     @staticmethod
-    def read_pdf_table(file_path):
+    def read_pdf_table(file_path:str)-> pd.DataFrame:
         """Reads tables from a PDF file and returns a pandas DataFrame. Handles errors gracefully."""
+        print(f"Reading PDF: {file_path}")
         try:
             with pdfplumber.open(file_path) as pdf:
                 all_tables = []
@@ -81,18 +88,37 @@ class FileHandler:
                 plt.show()
 
     @staticmethod
-    def use_model(modelname):
+    def use_model(modelname:str):
+        """Load a saved machine learning model using joblib library.
+
+        Args:
+            modelname (_type_:.pkl | .pkl.gz | .h5): Any
+
+        Returns:
+            _type_: Machine Learning Model
+        """
         return joblib.load(os.path.join(MODEL_PATH, modelname))
 
     @staticmethod
-    def adjust_engagement(val, DATA_THRESHOLD):
+    def adjust_engagement(val, DATA_THRESHOLD:int):
+        """Adjust engagement score based on a given threshold."""
         return val * 0.7 if val > DATA_THRESHOLD else val
 
     @staticmethod
-    def add_important_columns(name):
+    def add_important_columns(name:str)-> list:
+        """Add important columns to a global list."""
+        IMPORTANT_COLUMNS = []
+        name=name.upper()
         return IMPORTANT_COLUMNS.append(name)
 
 class CorrelationFeatures:
+    """Class for calculating correlations between variables.
+    Returns:\n
+        _type_: Spearsman correlation coefficient \n
+        _type_: Pearson correlation coefficient \n
+        _type_: Kendall correlation coefficient \n
+        _type_: column categories \n
+    """
     @staticmethod
     def pearson_correlation(filename):
         df = FileHandler.read_data(filename)
@@ -104,7 +130,17 @@ class CorrelationFeatures:
         return df.corr('spearman')
 
     @staticmethod
-    def column_categories(dataframe):
+    def column_categories(dataframe:pd.DataFrame)-> tuple[list[str], list[str]]:
+        """ _summary_
+          Args:
+           Returns a tuple of lists containing object and numeric columns.\n\n
+           This function takes a dataframe and separates its columns into two categories based on their dtype.\n\n
+           The first category contains columns that are of object dtype,\n
+           while the second category contains columns that are not of object dtype.\n\n
+           makes the categorizing more easier\n  
+           Returns: 
+              <OBJECT_COLS:NUMERIC_COLS> 
+            """
         column_names = dataframe.columns
         OBJECT_COLUMNS = []
         NUMERIC_COLUMNS = []
@@ -117,7 +153,7 @@ class CorrelationFeatures:
         return OBJECT_COLUMNS, NUMERIC_COLUMNS
 
     @staticmethod
-    def get_important_correlations(df, threshold):
+    def get_important_correlations(df:pd.DataFrame, threshold:float):
         corr_matrix = df.corr(numeric_only=True)
         strong_corrs = []
         for i in range(len(corr_matrix.columns)):
@@ -133,53 +169,73 @@ class CorrelationFeatures:
         return strong_corrs
 
     @staticmethod
-    def pivot_products(dataframe, index, column, value):
+    def pivot_products(dataframe:pd.DataFrame, index, column, value)-> pd.DataFrame:
+        """Pivots a dataframe to create a matrix where each row represents an index,
+        each column represents a unique value in the column argument, and each cell contains the sum of the corresponding value in the value argument.
+        Args:
+            dataframe (pd.DataFrame): _description_
+            index (_type_): _description_
+            column (_type_): _description_
+            value (_type_): _description_
+
+        Returns:
+            Matrix: A pandas DataFrame representing the pivoted data.
+        """
         product_matrix = dataframe.pivot_table(index=index, columns=column, values=value).fillna(0)
         return product_matrix
     
     
 class Eda:
+    """<h2>Exploratry data analysis </h2>
+
+    <h3>Returns</h3>:
+        _type_: new feature columns in the existing data frame
+    """
     @staticmethod
-    def combine_two_features_multiply(dataframe,feature1,feature2,new_feature):
-        """Multiply two features together to create a new feature"""
-        """args: (dataframe,existing_feature1,existing_feature2,new_feature)"""
-        feature1=str(feature1).upper()
-        feature2=str(feature2).upper()
-        new_feature=str(new_feature).upper()
+    def combine_two_features_multiply(dataframe:pd.DataFrame,feature1:str,feature2:str,new_feature:str)->pd.DataFrame:
+        """Multiply two features together to create a new feature \n
+           Args: (dataframe,existing_feature1,existing_feature2,new_feature)"""
+        feature1=feature1.upper()
+        feature2=feature2.upper()
+        new_feature=new_feature.upper()
         dataframe[new_feature]=dataframe[feature1]*dataframe[feature2]
         return dataframe
     
     @staticmethod
-    def combine_two_Features_add(dataframe,feature1,feature2,new_feature):
-        """add Two features together to create new feature"""
-        """args: (dataframe,existing_feature1,existing_feature2,new_feature)"""
-        feature1=str(feature1).upper()
-        feature2=str(feature2).upper()
-        new_feature=str(new_feature).upper()
+    def combine_two_Features_add(dataframe:pd.DataFrame,feature1:str,feature2:str,new_feature:str)-> pd.DataFrame:
+        """add Two features together to create new feature \n
+           Args: (dataframe,existing_feature1,existing_feature2,new_feature)"""
+        feature1=feature1.upper()
+        feature2=feature2.upper()
+        new_feature=new_feature.upper()
         dataframe[new_feature] = dataframe[feature1] + dataframe[feature2]
         return dataframe
     @staticmethod
-    def combine_two_Features_minus(dataframe,feature1,feature2,new_feature):
-        """Sbtract to create new feature from existing Two features"""
-        """args: (dataframe,existing_feature1,existing_feature2,new_feature)"""
-        feature1=str(feature1).upper()
-        feature2=str(feature2).upper()
-        new_feature=str(new_feature).upper()
+    def combine_two_Features_minus(dataframe:pd.DataFrame,feature1:str,feature2:str,new_feature:str) -> pd.DataFrame:
+        """Subtract to create new feature from existing Two features \n
+             args: (dataframe,existing_feature1,existing_feature2,new_feature)"""
+        feature1=feature1.upper()
+        feature2=feature2.upper()
+        new_feature=new_feature.upper()
         dataframe[new_feature] = dataframe[feature1] - dataframe[feature2]
         return dataframe
     
     @staticmethod
-    def combine_two_Features_div(dataframe,feature1,feature2,new_feature):
-        """Divide and create new feature from Two existing Features"""
-        """args: (dataframe,existing_feature1,existing_feature2,new_feature)"""
-        feature1=str(feature1).upper()
-        feature2=str(feature2).upper()
-        new_feature=str(new_feature).upper()
+    def combine_two_Features_div(dataframe:pd.DataFrame,feature1:str,feature2:str,new_feature:str)-> pd.DataFrame:
+        """Divide and create new feature from Two existing Features \n
+         _ARGS_: (d)ataframe,existing_feature1,existing_feature2,new_feature)\n
+         _type_: newfeature= feature1/feature2 \n
+        Note: If there's division by zero, it will result in NaN values."""
+        feature1=feature1.upper()
+        feature2=feature2.upper()
+        new_feature=new_feature.upper()
         dataframe[new_feature] = dataframe[feature1] / dataframe[feature2]
         return dataframe
     
     
 class Visualization:
+    """<H2>Plot line graphs, bar plots, and heatmaps.</H2>
+    """
     @staticmethod
     def plot_line(dataframe, x_col, y_col):
         plt.figure(figsize=(10, 5))
@@ -202,7 +258,7 @@ class Visualization:
         plt.show()
 
     @staticmethod
-    def correlation_graph_plot(numeric_df):
+    def correlation_graph_plot(numeric_df:pd.DataFrame):
         correlation_matrix = numeric_df.corr()
         print(correlation_matrix)
         plt.figure(figsize=(10, 8))
@@ -212,7 +268,7 @@ class Visualization:
         plt.show()
 
     @staticmethod
-    def plot_pivot_products(products_df, title):
+    def plot_pivot_products(products_df:pd.DataFrame, title):
         product_corr = products_df.corr()
         plt.figure(figsize=(10, 8))
         sns.heatmap(product_corr, cmap='coolwarm', annot=True, linewidths=0.5)
@@ -221,7 +277,7 @@ class Visualization:
         plt.show()
 
     @staticmethod
-    def product_product_corr_heatmap(df):
+    def product_product_corr_heatmap(df:pd.DataFrame):
         matrix = df.pivot_table(index='ORDERNUMBER', columns='PRODUCTCODE', values='SALES').fillna(0)
         corr = matrix.corr()
         plt.figure(figsize=(12, 10))
@@ -243,3 +299,26 @@ class Visualization:
         plt.tight_layout()
         plt.show()
     
+class main:
+ def __init__(self,filename:str ,threshold: float,) -> None :
+     """initialize the class instance with filename and threshold""" 
+     self.filename = filename
+     self.df = self.agent_step1_load_data(self.filename)
+     self.DATA_THRESHOLD = threshold
+     
+     
+     if self.df is not None:
+         self.valid=True
+         self.object_cols, self.num_cols = CorrelationFeatures.column_categories(self.df)
+         print(f"[INIT] data loaded. {len(self.df)} rows. Numeric: {len(self.num_cols)}, categorical cols: {len(self.object_cols)}")
+     else:
+         self.valid=False
+         self.object_cols,self.num_cols=None,None
+         print("[INIT] invalid file path provided. Please provide valid csv/pdf file name]")   
+         
+
+if __name__=='__main__':
+    filename="Sample_Data.csv"
+    threshold=0.3
+    obj=main(filename,threshold)
+    print(obj.valid) 
