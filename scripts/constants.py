@@ -11,26 +11,34 @@ DATA_FOLDER = os.path.join(BASE_DIR, 'data')
 MODEL_PATH = os.path.join(BASE_DIR, 'models')
 GRAPHS_SAVED_PATH = os.path.join(BASE_DIR, 'outputs')
 
-
-    
 class FileHandler:
-    """Loads a CSV file from the specified directory and returns it as a Pandas DataFrame.
-    Raises:
-        ValueError: failed to load file
-    Returns:
-        _type_: Pandas DataFrame
-    """
-    @staticmethod
-    def read_data(filename:str)-> pd.DataFrame:
-        return pd.read_csv(os.path.join(DATA_FOLDER, filename), encoding='latin-1')
+    def __init__(self, data_folder=DATA_FOLDER, graphs_path=GRAPHS_SAVED_PATH, model_path=MODEL_PATH):
+        self.data_folder = data_folder
+        self.graphs_path = graphs_path
+        self.model_path = model_path
+        self.last_loaded_df = None
+        self.last_error = None
 
-    @staticmethod
-    def write_data(df:pd.DataFrame, filename:str):
-        df.to_csv(os.path.join(DATA_FOLDER, filename), index=False, sep='\t')
+    def read_data(self, filename:str) -> pd.DataFrame:
+        try:
+            df = pd.read_csv(os.path.join(self.data_folder, filename), encoding='latin-1')
+            self.last_loaded_df = df
+            self.last_error = None
+            return df
+        except Exception as e:
+            self.last_error = str(e)
+            print(f"Error reading CSV: {e}")
+            return None
 
-    @staticmethod
-    def read_pdf_table(file_path:str)-> pd.DataFrame:
-        """Reads tables from a PDF file and returns a pandas DataFrame. Handles errors gracefully."""
+    def write_data(self, df:pd.DataFrame, filename:str):
+        try:
+            df.to_csv(os.path.join(self.data_folder, filename), index=False, sep='\t')
+            self.last_error = None
+        except Exception as e:
+            self.last_error = str(e)
+            print(f"Error writing CSV: {e}")
+
+    def read_pdf_table(self, file_path:str) -> pd.DataFrame:
         print(f"Reading PDF: {file_path}")
         try:
             with pdfplumber.open(file_path) as pdf:
@@ -41,23 +49,26 @@ class FileHandler:
                         df = pd.DataFrame(table[1:], columns=table[0])
                         all_tables.append(df)
                 if all_tables:
-                    return pd.concat(all_tables, ignore_index=True)
+                    result = pd.concat(all_tables, ignore_index=True)
+                    self.last_loaded_df = result
+                    self.last_error = None
+                    return result
                 else:
                     raise ValueError("No tables found in PDF.")
         except Exception as e:
+            self.last_error = str(e)
             print(f"Error reading PDF: {e}")
             return None
 
-    @staticmethod
-    def agent_step1_load_data(file_path):
-        """Agent step 1: Loads CSV or PDF as DataFrame with error handling."""
+    def agent_step1_load_data(self, file_path):
         try:
             if file_path.lower().endswith('.csv'):
-                df = FileHandler.read_data(os.path.basename(file_path))
-                print("CSV loaded successfully.")
+                df = self.read_data(os.path.basename(file_path))
+                if df is not None:
+                    print("CSV loaded successfully.")
                 return df
             elif file_path.lower().endswith('.pdf'):
-                df = FileHandler.read_pdf_table(file_path)
+                df = self.read_pdf_table(file_path)
                 if df is not None:
                     print("PDF loaded successfully.")
                     return df
@@ -66,95 +77,79 @@ class FileHandler:
                     return None
             else:
                 print("Unsupported file type.")
+                self.last_error = "Unsupported file type."
                 return None
         except Exception as e:
+            self.last_error = str(e)
             print(f"Error loading file: {e}")
             return None
 
-    @staticmethod
-    def save_graph(graph_name):
-        graph_path = os.path.join(GRAPHS_SAVED_PATH, graph_name)
+    def save_graph(self, graph_name):
+        graph_path = os.path.join(self.graphs_path, graph_name)
         plt.savefig(graph_path)
 
-    @staticmethod
-    def show_saved_graphs(output_folder):
-        for file in os.listdir(output_folder):
+    def show_saved_graphs(self, output_folder=None):
+        folder = output_folder if output_folder else self.graphs_path
+        for file in os.listdir(folder):
             if file.endswith('.png'):
                 print(file)
                 plt.figure()
-                img = plt.imread(os.path.join(output_folder, file))
+                img = plt.imread(os.path.join(folder, file))
                 plt.imshow(img)
                 plt.axis('off')
                 plt.show()
 
-    @staticmethod
-    def use_model(modelname:str):
-        """Load a saved machine learning model using joblib library.
+    def use_model(self, modelname:str):
+        try:
+            model = joblib.load(os.path.join(self.model_path, modelname))
+            self.last_error = None
+            return model
+        except Exception as e:
+            self.last_error = str(e)
+            print(f"Error loading model: {e}")
+            return None
 
-        Args:
-            modelname (_type_:.pkl | .pkl.gz | .h5): Any
-
-        Returns:
-            _type_: Machine Learning Model
-        """
-        return joblib.load(os.path.join(MODEL_PATH, modelname))
-
-    @staticmethod
-    def adjust_engagement(val, DATA_THRESHOLD:int):
-        """Adjust engagement score based on a given threshold."""
+    def adjust_engagement(self, val, DATA_THRESHOLD:int):
         return val * 0.7 if val > DATA_THRESHOLD else val
 
-    @staticmethod
-    def add_important_columns(name:str)-> list:
-        """Add important columns to a global list."""
-        IMPORTANT_COLUMNS = []
-        name=name.upper()
-        return IMPORTANT_COLUMNS.append(name)
+    def add_important_columns(self, name:str, important_columns:list=None) -> list:
+        if important_columns is None:
+            important_columns = []
+        name = name.upper()
+        important_columns.append(name)
+        return important_columns
 
 class CorrelationFeatures:
-    """Class for calculating correlations between variables.
-    Returns:\n
-        _type_: Spearsman correlation coefficient \n
-        _type_: Pearson correlation coefficient \n
-        _type_: Kendall correlation coefficient \n
-        _type_: column categories \n
-    """
-    @staticmethod
-    def pearson_correlation(filename):
-        df = FileHandler.read_data(filename)
-        return df.corr('pearson')
+    def __init__(self, dataframe:pd.DataFrame=None):
+        self.dataframe = dataframe
+        self.object_columns = []
+        self.numeric_columns = []
+        if dataframe is not None:
+            self.object_columns, self.numeric_columns = self.column_categories(dataframe)
 
-    @staticmethod
-    def spearman_correlation(filename):
-        df = FileHandler.read_data(filename)
-        return df.corr('spearman')
+    def pearson_correlation(self):
+        if self.dataframe is not None:
+            return self.dataframe.corr('pearson')
+        return None
 
-    @staticmethod
-    def column_categories(dataframe:pd.DataFrame)-> tuple[list[str], list[str]]:
-        """ _summary_
-          Args:
-           Returns a tuple of lists containing object and numeric columns.\n\n
-           This function takes a dataframe and separates its columns into two categories based on their dtype.\n\n
-           The first category contains columns that are of object dtype,\n
-           while the second category contains columns that are not of object dtype.\n\n
-           makes the categorizing more easier\n  
-           Returns: 
-              <OBJECT_COLS:NUMERIC_COLS> 
-            """
-        column_names = dataframe.columns
-        OBJECT_COLUMNS = []
-        NUMERIC_COLUMNS = []
-        for column in column_names:
-            if dataframe[column].dtype == 'object':
-                OBJECT_COLUMNS.append(column)
-        for column in column_names:
-            if dataframe[column].dtype != 'object':
-                NUMERIC_COLUMNS.append(column)
-        return OBJECT_COLUMNS, NUMERIC_COLUMNS
+    def spearman_correlation(self):
+        if self.dataframe is not None:
+            return self.dataframe.corr('spearman')
+        return None
 
-    @staticmethod
-    def get_important_correlations(df:pd.DataFrame, threshold:float):
-        corr_matrix = df.corr(numeric_only=True)
+    def column_categories(self, dataframe:pd.DataFrame=None) -> tuple:
+        df = dataframe if dataframe is not None else self.dataframe
+        if df is None:
+            return [], []
+        column_names = df.columns
+        object_columns = [col for col in column_names if df[col].dtype == 'object']
+        numeric_columns = [col for col in column_names if df[col].dtype != 'object']
+        return object_columns, numeric_columns
+
+    def get_important_correlations(self, threshold:float=0.6):
+        if self.dataframe is None:
+            return []
+        corr_matrix = self.dataframe.corr(numeric_only=True)
         strong_corrs = []
         for i in range(len(corr_matrix.columns)):
             for j in range(i):
@@ -168,40 +163,22 @@ class CorrelationFeatures:
         strong_corrs.sort(key=lambda x: abs(x[2]), reverse=True)
         return strong_corrs
 
-    @staticmethod
-    def pivot_products(dataframe:pd.DataFrame, index, column, value)-> pd.DataFrame:
-        """Pivots a dataframe to create a matrix where each row represents an index,
-        each column represents a unique value in the column argument, and each cell contains the sum of the corresponding value in the value argument.
-        Args:
-            dataframe (pd.DataFrame): _description_
-            index (_type_): _description_
-            column (_type_): _description_
-            value (_type_): _description_
+    def pivot_products(self, index, column, value):
+        if self.dataframe is not None:
+            product_matrix = self.dataframe.pivot_table(index=index, columns=column, values=value).fillna(0)
+            return product_matrix
+        return None
 
-        Returns:
-            Matrix: A pandas DataFrame representing the pivoted data.
-        """
-        product_matrix = dataframe.pivot_table(index=index, columns=column, values=value).fillna(0)
-        return product_matrix
-    
-    
 class Eda:
-    """<h2>Exploratry data analysis </h2>
+    def __init__(self, dataframe:pd.DataFrame=None):
+        self.dataframe = dataframe
+        self.feature_columns = []
 
-    <h3>Returns</h3>:
-        _type_: new feature columns in the existing data frame
-    """
-    @staticmethod
-    def combine_two_features_multiply(dataframe:pd.DataFrame,feature1:str,feature2:str,new_feature:str)->pd.DataFrame:
-        """Multiply two features together to create a new feature \n
-           Args: (dataframe,existing_feature1,existing_feature2,new_feature)"""
-        feature1=feature1.upper()
-        feature2=feature2.upper()
-        new_feature=new_feature.upper()
-        dataframe[new_feature]=dataframe[feature1]*dataframe[feature2]
-        return dataframe
-    
-    @staticmethod
+    def combine_two_features_multiply(self, feature1:str, feature2:str, new_feature:str) -> pd.DataFrame:
+        if self.dataframe is not None:
+            self.dataframe[new_feature] = self.dataframe[feature1] * self.dataframe[feature2]
+            self.feature_columns.append(new_feature)
+        return self.dataframe
     def combine_two_Features_add(dataframe:pd.DataFrame,feature1:str,feature2:str,new_feature:str)-> pd.DataFrame:
         """add Two features together to create new feature \n
            Args: (dataframe,existing_feature1,existing_feature2,new_feature)"""
@@ -321,4 +298,4 @@ if __name__=='__main__':
     filename="Sample_Data.csv"
     threshold=0.3
     obj=main(filename,threshold)
-    print(obj.valid) 
+    print(obj.valid)
