@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import joblib
 import pdfplumber
+from scipy.stats import trim_mean
+import wquantiles
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 DATA_FOLDER = os.path.join(BASE_DIR, 'data')
@@ -170,11 +172,14 @@ class CorrelationFeatures:
         return None
 
 class Eda:
+    """Exploratory data analysis"""
     def __init__(self, dataframe:pd.DataFrame=None):
         self.dataframe = dataframe
         self.feature_columns = []
 
     def combine_two_features_multiply(self, feature1:str, feature2:str, new_feature:str) -> pd.DataFrame:
+        """multiply Two features to create new feature \n
+        Args: (dataframe,existing_feature1,existing_feature2,new_feature)"""
         if self.dataframe is not None:
             self.dataframe[new_feature] = self.dataframe[feature1] * self.dataframe[feature2]
             self.feature_columns.append(new_feature)
@@ -209,6 +214,32 @@ class Eda:
         dataframe[new_feature] = dataframe[feature1] / dataframe[feature2]
         return dataframe
     
+    def clean_data_mod(self,column_name:str)-> pd.DataFrame:
+        """Clean data by filling missing values with the mode of the column.\n
+        Args: (dataframe,column_name)"""
+        dataframe=self.dataframe
+        dataframe[column_name]=dataframe[column_name].fillna(dataframe[column_name].mode()[0])
+        return dataframe
+    
+    def clean_data_trimmean(self,column_name:str)-> pd.DataFrame:
+        """Clean data by filling missing values with the mean of the column.\n
+        Args: (dataframe,column_name)"""
+        dataframe=self.dataframe
+        trimmed_mean = trim_mean(dataframe[column_name], proportiontocut=0.1, axis=0)
+        dataframe[column_name]=dataframe[column_name].fillna(trimmed_mean)
+        return dataframe
+    
+    def middle_point_of_weighted_data(self,column_name:str,weight_column:str)-> pd.DataFrame:
+        """calculate the weighted median of a column based on another column.\n
+        Args: (dataframe,column_name,weight_column)"""
+        dataframe=self.dataframe
+        return wquantiles.median(dataframe[column_name], weights=dataframe[weight_column])
+    
+    def mode_per_product(self,subject:str,on_thebasis_of:str)-> pd.DataFrame:
+        """calculate the mode of a column for each unique value in another column.\n
+        Args: (dataframe,column_name)"""
+        dataframe=self.dataframe
+        return dataframe.groupby(subject)[on_thebasis_of].agg(lambda x: x.mode()[0])
     
 class Visualization:
     """<H2>Plot line graphs, bar plots, and heatmaps.</H2>
