@@ -1,5 +1,5 @@
-import os
-from scripts.constants import agent_step1_load_data
+
+from scripts.constants import FileHandler
 import pandas as pd
 import pdfplumber
 class DataLoadAgent:
@@ -12,7 +12,8 @@ class DataLoadAgent:
 
     def run(self):
         try:
-            self.dataframe = agent_step1_load_data(self.file_path)
+            # Load the dataframe using FileHandler
+            self.dataframe = FileHandler.agent_step1_load_data(self.file_path)
             if self.dataframe is not None:
                 self.status = "success"
                 print(f"Data loaded successfully from {self.file_path}")

@@ -14,6 +14,7 @@ MODEL_PATH = os.path.join(BASE_DIR, 'models')
 GRAPHS_SAVED_PATH = os.path.join(BASE_DIR, 'outputs')
 
 class FileHandler:
+    """<h3>Handles file I/O operations like reading/writing files, handling errors, etc.</h3>"""
     def __init__(self, data_folder=DATA_FOLDER, graphs_path=GRAPHS_SAVED_PATH, model_path=MODEL_PATH):
         self.data_folder = data_folder
         self.graphs_path = graphs_path
@@ -240,6 +241,15 @@ class Eda:
         Args: (dataframe,column_name)"""
         dataframe=self.dataframe
         return dataframe.groupby(subject)[on_thebasis_of].agg(lambda x: x.mode()[0])
+    @staticmethod
+    def get_mad(commodity:pd.DataFrame )-> float:
+        """Get the mean abs deviation of a column or a commodity.\n
+        Args:(commodity): dataframe or series \n
+        Returns: Float value of spreadness of data from its mean value"""
+        mean=commodity.mean()
+        mad=np.sum(np.abs(commodity - mean))/len(commodity)
+        return mad
+        
     
 class Visualization:
     """<H2>Plot line graphs, bar plots, and heatmaps.</H2>
